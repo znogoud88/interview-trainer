@@ -1,0 +1,114 @@
+[
+  {
+    "id": "react",
+    "label": "REACT",
+    "title": "React и Next.js",
+    "color": "#3B82F6",
+    "desc": "Основной фреймворк на чеках. Спрашивают не определения, а «когда нужен useEffect», «почему тормозит», «где живёт состояние».",
+    "includes": ["props и state, ререндеры и их причины", "useEffect: когда нужен и когда нет", "мемоизация и React Compiler", "серверные данные: React Query, гонки запросов", "формы, Suspense, Error Boundaries", "keys, reconciliation, Fiber", "Next.js: SSR/SSG/ISR, Server Components, кэш App Router, hydration"]
+  },
+  {
+    "id": "typescript",
+    "label": "TS",
+    "title": "TypeScript",
+    "color": "#6366F1",
+    "desc": "Пара вопросов на чеке, обычно про any/unknown, narrowing и типизацию API. Глубокие типы спрашивают редко.",
+    "includes": ["any vs unknown vs never, strict", "narrowing и type guards, zod на границе", "discriminated unions: невозможные состояния", "generics и utility types", "структурная типизация и branded types"]
+  },
+  {
+    "id": "browser",
+    "label": "BROWSER",
+    "title": "Браузер",
+    "color": "#0EA5E9",
+    "desc": "Что браузер делает сам: хранилища, история, event loop, рендеринг страницы, CORS.",
+    "includes": ["localStorage, sessionStorage, cookies, IndexedDB, URL как state", "History API и SPA-навигация", "event loop, задачи и микрозадачи", "как браузер рисует: reflow, repaint, композитинг", "CORS и preflight"]
+  },
+  {
+    "id": "security",
+    "label": "SECURITY",
+    "title": "Безопасность и auth",
+    "color": "#DC2626",
+    "desc": "Аутентификация, токены и классические уязвимости. Главная мысль: фронту нельзя доверять, проверки на сервере.",
+    "includes": ["аутентификация vs авторизация, RBAC", "JWT vs сессии, access/refresh, где хранить токены", "OAuth 2.0 + PKCE, OIDC", "XSS, CSRF, clickjacking", "CSP и security headers", "IDOR, доверие фронту", "секреты и supply chain"]
+  },
+  {
+    "id": "network",
+    "label": "NETWORK",
+    "title": "HTTP, API и кэш",
+    "color": "#0D9488",
+    "desc": "Как фронт разговаривает с бэком: REST, статусы, кэширование на всех слоях, realtime, вебхуки и очереди.",
+    "includes": ["HTTP caching: Cache-Control, ETag", "слои кэша и инвалидация, stale-while-revalidate", "REST: методы, идемпотентность, 401 vs 403", "дизайн API: ошибки, пагинация, версии", "REST vs GraphQL vs gRPC", "таймауты, ретраи, rate limiting", "polling vs SSE vs WebSocket", "вебхуки, очереди, at-least-once"]
+  },
+  {
+    "id": "performance",
+    "label": "PERF",
+    "title": "Производительность",
+    "color": "#F59E0B",
+    "desc": "Core Web Vitals и как их дебажить. Ценится процесс «измерил, нашёл, починил, измерил», а не список трюков.",
+    "includes": ["LCP, INP, CLS и пороги", "как дебажить LCP и TTFB", "INP, long tasks, виртуализация", "CLS и резервирование места", "размер бандла, code splitting, tree shaking", "картинки и шрифты", "RUM, perf budget, preload/prefetch"]
+  },
+  {
+    "id": "css",
+    "label": "CSS",
+    "title": "Стили",
+    "color": "#EC4899",
+    "desc": "Не «как центрировать div», а как стили не гниют в большом проекте: специфичность, модули, токены, темы.",
+    "includes": ["специфичность, stacking context, z-index", "Flex vs Grid, responsive, container queries", "CSS Modules, Tailwind, организация стилей", "токены, SCSS vs custom properties, dark mode", "анимации и reflow/repaint, sticky"]
+  },
+  {
+    "id": "a11y",
+    "label": "A11Y",
+    "title": "Доступность",
+    "color": "#8B5CF6",
+    "desc": "Семантика, клавиатура, скринридер. Первое правило ARIA и доступная модалка это почти обязательные вопросы.",
+    "includes": ["что такое доступность, WCAG AA, POUR", "семантический HTML и первое правило ARIA", "клавиатура, фокус, доступная модалка", "формы, aria-live, SPA-навигация", "как тестировать доступность"]
+  },
+  {
+    "id": "seo",
+    "label": "SEO",
+    "title": "SEO",
+    "color": "#84CC16",
+    "desc": "Техническое SEO глазами фронтендера: рендеринг, canonical, hreflang, structured data, редиректы.",
+    "includes": ["SEO с первого дня, как краулер видит SPA", "canonical, дубли, фасетные фильтры", "hreflang и международные URL", "structured data, title/description, Open Graph", "редиректы, sitemap, robots vs noindex"]
+  },
+  {
+    "id": "testing",
+    "label": "TESTING",
+    "title": "Тестирование",
+    "color": "#22C55E",
+    "desc": "Пирамида или трофей, что такое хороший тест, RTL и MSW, E2E без флаков.",
+    "includes": ["пирамида vs трофей, unit/integration/E2E", "хороший тест и что покрывать первым", "RTL, MSW, async в тестах", "E2E без флаков, data-testid", "легаси, TDD, баг в проде", "что гоняем в CI и в каком порядке"]
+  },
+  {
+    "id": "devops",
+    "label": "DEVOPS",
+    "title": "CI/CD, Docker, облака",
+    "color": "#64748B",
+    "desc": "Путь коммита в прод, Docker, деплой без даунтайма, секреты, мониторинг, облака на уровне концепций.",
+    "includes": ["пайплайн коммит → прод, CI vs CD", "Docker: image vs container, multi-stage", "zero-downtime деплой, feature flags, откат", "переменные окружения и секреты", "мониторинг и инциденты", "serverless, object storage, presigned URL", "что жрёт деньги в облаке"]
+  },
+  {
+    "id": "databases",
+    "label": "DB",
+    "title": "Базы данных",
+    "color": "#B45309",
+    "desc": "SQL vs NoSQL, индексы, N+1, транзакции, гонки. Уровень «фронтендер понимает, что происходит за API».",
+    "includes": ["SQL vs NoSQL, embed vs reference", "индексы и диагностика медленного запроса", "N+1", "транзакции и ACID", "гонки и блокировки", "offset vs cursor пагинация", "миграции без даунтайма", "JOIN, GROUP BY, foreign keys", "пул соединений, views, бэкапы"]
+  },
+  {
+    "id": "architecture",
+    "label": "ARCH",
+    "title": "Архитектура фронтенда",
+    "color": "#A21CAF",
+    "desc": "Как устроен большой фронт: микрофронтенды, монорепа, дизайн-система, структура проекта, BFF.",
+    "includes": ["микрофронтенды и Module Federation", "монорепа, apps/libs, circular deps", "дизайн-система и версионирование", "feature-based структура, ADR", "BFF и архитектура состояния"]
+  },
+  {
+    "id": "ai",
+    "label": "AI",
+    "title": "AI-инструменты",
+    "color": "#F97316",
+    "desc": "Обязательная тема на чеках с октября 2025: свой сетап, что делегируешь, как проверяешь, где AI не тот инструмент.",
+    "includes": ["свой AI-сетап и что делегировать", "как проверять AI-код, когда остановиться", "контекст, rules-файлы, токены", "MCP, skills, агентные workflow", "безопасность и поддержка AI-кода"]
+  }
+]

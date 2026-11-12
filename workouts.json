@@ -1,0 +1,33 @@
+[
+  {
+    "id": "light",
+    "title": "Лёгкая",
+    "note": "Около 25 минут. Три блиц-темы по 3 минуты из разных категорий, потом одна глубокая тема на 12 минут.",
+    "blocks": [
+      { "label": "Блиц", "type": "short", "category": "any", "sets": 3, "play": 3, "reveal": 1.5, "rest": 0.5 },
+      { "label": "Глубоко", "type": "deep", "rest": 0.5, "phases": [
+        { "mode": "read", "play": 4 },
+        { "mode": "explain", "play": 4, "reveal": 1 },
+        { "mode": "example", "play": 4, "reveal": 1 }
+      ] }
+    ]
+  },
+  {
+    "id": "heavy",
+    "title": "Тяжёлая",
+    "note": "Около 45 минут. Пять блиц-тем, потом две глубокие темы по 12 минут.",
+    "blocks": [
+      { "label": "Блиц", "type": "short", "category": "any", "sets": 5, "play": 3, "reveal": 1.5, "rest": 0.5 },
+      { "label": "Глубоко", "type": "deep", "rest": 1, "phases": [
+        { "mode": "read", "play": 4 },
+        { "mode": "explain", "play": 4, "reveal": 1 },
+        { "mode": "example", "play": 4, "reveal": 1 }
+      ] },
+      { "label": "Глубоко", "type": "deep", "rest": 0.5, "phases": [
+        { "mode": "read", "play": 4 },
+        { "mode": "explain", "play": 4, "reveal": 1 },
+        { "mode": "example", "play": 4, "reveal": 1 }
+      ] }
+    ]
+  }
+]

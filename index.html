@@ -1,0 +1,1054 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Interview Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Same console as drum-randomizer: mode switch, the workout clock, the "deck" with the current topic,
+   then the "paper" with the topic card (or the prompt that hides it while you explain out loud). */
+:root {
+  --bg: #E4E6E8; --surface: #F3F4F5; --ink: #16191C; --muted: #59626B; --line: #C9CDD1;
+  --brass: #9C6A0E; --brass-ink: #FFFFFF; --rest: #2F6F8F; --head: #FBFAF6; --head-ink: #16191C;
+  --danger: #B3261E; --ok: #2E8B57; --warn: #B7791F;
+  --g0: #DC2626; --g1: #EAB308; --g2: #16A34A;
+  --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  --r: 10px; color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111315; --surface: #1A1D20; --ink: #ECEEF0; --muted: #98A1A9; --line: #2C3136;
+    --brass: #E2AC3F; --brass-ink: #1A1206; --rest: #6FB3D6; --head: #1F2327; --head-ink: #ECEEF0;
+    --danger: #F2867D; --ok: #5FC58A; --warn: #E2AC3F; --g0: #EF5350; --g1: #F2C94C; --g2: #4ADE80; color-scheme: dark;
+  }
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--bg); color: var(--ink); margin: 0; }
+body { font-family: var(--body); font-size: 15px; line-height: 1.5; }
+a { color: var(--brass); font-weight: 600; }
+.wrap > * { min-width: 0; }
+.wrap { max-width: 1100px; margin: 0 auto; display: grid; gap: 18px; padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+h1 { font-family: var(--display); font-weight: 900; font-size: 30px; letter-spacing: .02em; text-transform: uppercase; margin: 0; }
+.modes { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: var(--surface); }
+.modes button { appearance: none; border: 0; background: transparent; color: var(--muted); font: 600 13px var(--body); padding: 6px 14px; border-radius: 999px; cursor: pointer; }
+.modes button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+#status { font-size: 13px; color: var(--muted); min-width: 0; }
+#status.err { color: var(--danger); }
+button:focus-visible, a:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
+
+/* ---------- workout picker ---------- */
+.picker { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 14px; }
+.wcard { border: 2px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 18px; display: grid; gap: 12px; align-content: start; }
+.wcard h2 { margin: 0; font: 900 40px/1 var(--display); text-transform: uppercase; letter-spacing: .01em; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.wcard h2 span { font: 600 15px var(--mono); color: var(--muted); letter-spacing: 0; }
+.wcard p { margin: 0; color: var(--muted); font-size: 14px; }
+.wcard ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; font-size: 14px; }
+.wcard li { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+.wcard li b { font-weight: 600; }
+.wcard li b::before { content: ""; display: inline-block; width: 12px; height: 6px; border-radius: 2px; background: var(--c, var(--muted)); margin-right: 8px; vertical-align: middle; }
+.wcard li span { color: var(--muted); font-family: var(--mono); font-size: 13px; text-align: right; }
+.primary { background: var(--brass); color: var(--brass-ink); border: 0; border-radius: 8px; padding: 12px 16px; font: 700 16px var(--body); cursor: pointer; justify-self: start; }
+
+/* ---------- workout clock ---------- */
+.clock { border: 2px solid var(--brass); border-radius: var(--r); background: var(--surface); padding: 18px 20px; display: grid; gap: 12px; }
+.clock.rest { border-color: var(--rest); }
+.clock.done { border-color: var(--line); }
+.clock-top { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: baseline; }
+.step-label { font: 900 clamp(32px, 6vw, 64px)/1 var(--display); text-transform: uppercase; letter-spacing: .01em; color: var(--brass); }
+.clock.rest .step-label { color: var(--rest); }
+.step-sub { font-family: var(--mono); font-size: 14px; color: var(--muted); }
+.clock-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: end; }
+.remaining { font: 600 clamp(64px, min(15vw, 14vh), 170px)/.9 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
+.clock.paused .remaining { opacity: .4; }
+.left-all { font-family: var(--mono); font-size: 15px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.left-all b { color: var(--ink); font-weight: 600; }
+.clock-side { display: grid; gap: 8px; justify-items: end; text-align: right; min-width: 0; }
+.next { font-size: 15px; color: var(--muted); }
+.next b { color: var(--ink); }
+.bar { height: 10px; background: var(--line); border-radius: 999px; overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--brass); border-radius: 999px; transition: width .4s linear; }
+.clock-foot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; font-family: var(--mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.steps { display: flex; gap: 3px; flex-wrap: wrap; }
+.steps i { width: 14px; height: 6px; border-radius: 2px; background: var(--c, var(--muted)); opacity: .3; }
+.steps i.r { width: 6px; }
+.steps i.d, .steps i.c { opacity: 1; }
+.steps i.c { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+.top { display: grid; gap: 18px; min-width: 0; }
+@media (min-width: 1000px) {
+  .top:has(> .clock:not([hidden])) { grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); align-items: stretch; }
+  .top:has(> .clock:not([hidden])) .clock-side { max-width: 260px; }
+  .top:has(> .clock:not([hidden])) .clock-side .row { justify-content: flex-end; }
+  .top:has(> .clock:not([hidden])) .deck { border: 0; padding-block: 0; align-content: center; }
+}
+
+/* ---------- free mode: category chips ---------- */
+.cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.cat { appearance: none; border: 2px solid var(--line); background: var(--surface); color: var(--ink); border-radius: var(--r); padding: 10px 12px; cursor: pointer;
+  display: grid; gap: 5px; text-align: left; transition: border-color .12s, transform .06s; }
+.cat:hover { border-color: var(--muted); }
+.cat:active { transform: translateY(1px); }
+.cat .label { font-family: var(--display); font-weight: 900; font-size: 24px; line-height: 1; letter-spacing: .01em; display: flex; align-items: center; gap: 8px; }
+.cat .label::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--c, var(--muted)); flex: none; }
+.cat .count { font-size: 12px; color: var(--muted); }
+.cat.on { border-color: var(--c, var(--brass)); }
+.cat.any .label::before { display: none; }
+.prog { display: flex; height: 5px; border-radius: 999px; overflow: hidden; background: var(--line); }
+.prog i { display: block; height: 100%; }
+.prog .p0 { background: var(--g0); } .prog .p1 { background: var(--g1); } .prog .p2 { background: var(--g2); }
+
+/* ---------- deck: the current topic ---------- */
+.deck { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding-block: 16px; }
+.now { min-width: 0; display: grid; gap: 6px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--brass); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.eyebrow .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c, var(--muted)); display: inline-block; }
+#nowName { font-family: var(--display); font-weight: 700; font-size: 32px; line-height: 1.05; margin: 0; overflow-wrap: anywhere; text-wrap: balance; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.btn { appearance: none; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 6px 12px; font: 500 13px var(--body); cursor: pointer; }
+.btn:hover:not(:disabled) { border-color: var(--muted); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.danger { color: var(--danger); }
+.btn kbd { margin-right: 6px; }
+.grades { display: inline-flex; gap: 6px; }
+.grade { appearance: none; border: 2px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 8px; padding: 8px 14px; font: 600 14px var(--body); cursor: pointer; }
+.grade:disabled { opacity: .45; cursor: not-allowed; }
+.grade[data-g="0"][aria-pressed="true"], .grade[data-g="0"]:hover:not(:disabled) { border-color: var(--g0); color: var(--g0); }
+.grade[data-g="1"][aria-pressed="true"], .grade[data-g="1"]:hover:not(:disabled) { border-color: var(--g1); color: var(--g1); }
+.grade[data-g="2"][aria-pressed="true"], .grade[data-g="2"]:hover:not(:disabled) { border-color: var(--g2); color: var(--g2); }
+.grade[aria-pressed="true"] { background: color-mix(in srgb, currentColor 12%, var(--surface)); }
+.hist { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.gd { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--line); vertical-align: middle; }
+.gd.g0 { background: var(--g0); } .gd.g1 { background: var(--g1); } .gd.g2 { background: var(--g2); }
+
+/* ---------- paper: the card ---------- */
+.paper { background: var(--head); color: var(--head-ink); border-radius: var(--r); border: 1px solid var(--line); position: relative; min-height: 220px; }
+.card { padding: 22px 26px 26px; max-width: 860px; font-size: 16px; line-height: 1.55; }
+.card h2 { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--brass); margin: 26px 0 8px; padding-top: 14px; border-top: 1px solid var(--line); }
+.card h2:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+.card h3 { font-size: 16px; margin: 16px 0 6px; }
+.card p { margin: 0 0 10px; }
+.card ul, .card ol { margin: 0 0 10px; padding-left: 22px; }
+.card li { margin-bottom: 4px; }
+.card code { font-family: var(--mono); font-size: .9em; background: color-mix(in srgb, var(--ink) 8%, transparent); padding: 1px 5px; border-radius: 4px; }
+.card pre { background: color-mix(in srgb, var(--ink) 7%, transparent); border-radius: 8px; padding: 12px 14px; overflow: auto; margin: 0 0 12px; font-size: 13.5px; line-height: 1.5; }
+.card pre code { background: none; padding: 0; font-size: inherit; }
+.card b { font-weight: 600; }
+.card .lead { font-size: 17px; }
+.paper .veil { min-height: 260px; display: grid; place-items: center; text-align: center; padding: 28px; }
+.veil h3 { font: 900 clamp(28px, 5vw, 48px)/1 var(--display); text-transform: uppercase; margin: 0 0 10px; opacity: .85; }
+.veil p { margin: 0 auto 16px; max-width: 520px; color: var(--muted); font-size: 15px; }
+.paper.hidden-card .card { display: none; }
+.paper .empty { padding: 48px 24px; text-align: center; color: var(--muted); font: 900 clamp(24px, 4vw, 40px)/1.1 var(--display); text-transform: uppercase; opacity: .4; }
+
+/* ---------- map ---------- */
+.map { display: grid; gap: 14px; }
+.map-sum { display: flex; gap: 14px 22px; flex-wrap: wrap; align-items: center; font-family: var(--mono); font-size: 13px; color: var(--muted); }
+.map-sum b { color: var(--ink); font-weight: 600; }
+.mcard { border: 2px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 16px 18px; display: grid; gap: 10px; border-left: 8px solid var(--c, var(--line)); }
+.mcard header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.mcard h2 { margin: 0; font: 900 28px/1 var(--display); text-transform: uppercase; letter-spacing: .01em; }
+.mcard h2 small { font: 500 13px var(--body); text-transform: none; color: var(--muted); margin-left: 10px; letter-spacing: 0; }
+.mcard .cnt { font-family: var(--mono); font-size: 12px; color: var(--muted); white-space: nowrap; }
+.mcard p { margin: 0; color: var(--muted); font-size: 14px; }
+.mcard details { font-size: 13px; color: var(--muted); }
+.mcard summary { cursor: pointer; }
+.mcard details ul { margin: 6px 0 0; padding-left: 20px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { appearance: none; border: 1px solid var(--line); border-left: 6px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 8px; padding: 5px 10px; font: 500 13px var(--body); cursor: pointer; text-align: left; }
+.chip:hover { border-color: var(--muted); }
+.chip.g0 { border-left-color: var(--g0); } .chip.g1 { border-left-color: var(--g1); } .chip.g2 { border-left-color: var(--g2); }
+.chip small { color: var(--muted); font-family: var(--mono); font-size: 11px; margin-left: 6px; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); align-items: center; }
+
+/* ---------- dialog ---------- */
+dialog.ask { border: 2px solid var(--brass); border-radius: var(--r); background: var(--surface); color: var(--ink); padding: 22px; width: min(620px, calc(100vw - 32px)); max-width: none; max-height: calc(100vh - 40px); }
+dialog.ask::backdrop { background: rgba(0, 0, 0, .55); }
+dialog.ask h2 { margin: 0 0 6px; font: 900 32px/1 var(--display); text-transform: uppercase; letter-spacing: .01em; }
+dialog.ask p { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
+.groups { display: grid; gap: 8px; max-height: 55vh; overflow: auto; padding-right: 4px; }
+.groups button { appearance: none; border: 2px solid var(--line); background: var(--bg); color: var(--ink); border-radius: var(--r); padding: 10px 14px; cursor: pointer;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; text-align: left; }
+.groups button b { font: 900 22px/1 var(--display); text-transform: uppercase; letter-spacing: .01em; }
+.groups button .t { font: 600 15px var(--body); }
+.groups button span.i { font: 500 12px var(--mono); color: var(--muted); text-align: right; max-width: 45%; }
+.groups button .k { font: 500 12px var(--mono); color: var(--muted); width: 18px; }
+.groups button:hover:not(:disabled) { border-color: var(--brass); }
+.groups button.last { border-color: var(--brass); }
+.groups button:disabled { opacity: .4; cursor: not-allowed; }
+dialog.ask .row { margin-top: 14px; justify-content: space-between; }
+
+details.lib { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+details.lib > summary { cursor: pointer; padding: 12px 16px; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+details.lib > summary::-webkit-details-marker { display: none; }
+details.lib > summary::after { content: "+"; font-family: var(--mono); color: var(--muted); }
+details.lib[open] > summary::after { content: "–"; }
+.libbody { padding: 0 16px 16px; display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.group h3 { margin: 0 0 8px; font-size: 12px; font-family: var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 500; display: flex; align-items: center; gap: 8px; }
+.group h3::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--c, var(--muted)); }
+.group ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.group li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; border-bottom: 1px solid var(--line); }
+.group li .n { all: unset; cursor: pointer; display: block; padding: 4px 0; overflow-wrap: anywhere; font-size: 14px; }
+.group li .n:hover { color: var(--brass); }
+.group li .n:focus-visible { outline: 2px solid var(--brass); }
+.group li small { display: block; color: var(--muted); font-size: 11px; font-family: var(--mono); }
+.libfoot { padding: 0 16px 16px; display: grid; gap: 6px; }
+.note { font-size: 13px; color: var(--muted); margin: 0; }
+.keys { font-size: 12px; color: var(--muted); margin: 0; }
+kbd { font-family: var(--mono); font-size: 11px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface); color: var(--ink); }
+.toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); cursor: pointer; user-select: none; }
+.toggle input { accent-color: var(--brass); width: 16px; height: 16px; }
+
+@media (max-width: 760px) {
+  .clock-main { grid-template-columns: minmax(0, 1fr); }
+  .clock-side { justify-items: start; text-align: left; }
+  .card { padding: 16px; font-size: 15px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>Interview Trainer</h1>
+      <div class="modes" role="group" aria-label="Режим">
+        <button id="modeWorkout" aria-pressed="true">Тренировка</button>
+        <button id="modeFree" aria-pressed="false">Свободно</button>
+        <button id="modeMap" aria-pressed="false">Карта</button>
+      </div>
+    </div>
+    <div id="status" role="status" aria-live="polite">Загружаю темы…</div>
+  </header>
+
+  <!-- workout: picker -->
+  <section class="picker" id="picker" aria-label="Выбор тренировки"></section>
+
+  <!-- free mode: category chips -->
+  <nav class="cats" id="cats" aria-label="Категории" hidden></nav>
+
+  <!-- map -->
+  <section class="map" id="map" aria-label="Карта тем" hidden></section>
+
+  <dialog class="ask" id="askDeep" aria-labelledby="askTitle">
+    <h2 id="askTitle">Глубокая тема</h2>
+    <p id="askText"></p>
+    <div class="groups" id="groupBtns"></div>
+    <div class="row">
+      <span class="keys"><kbd>1</kbd>–<kbd>9</kbd> выбрать · <kbd>Esc</kbd> отмена</span>
+      <span class="row"><button class="btn" id="askBack" type="button" hidden>Назад</button><button class="btn" id="askCancel" type="button">Отмена</button></span>
+    </div>
+  </dialog>
+
+  <div class="top">
+    <!-- workout: running clock -->
+    <section class="clock" id="clock" hidden aria-label="Таймер тренировки">
+      <div class="clock-top">
+        <div class="step-label" id="stepLabel">—</div>
+        <div class="step-sub" id="stepSub"></div>
+      </div>
+      <div class="clock-main">
+        <div>
+          <div class="remaining" id="remaining">0:00</div>
+          <div class="left-all" id="leftAll"></div>
+        </div>
+        <div class="clock-side">
+          <div class="next" id="nextUp"></div>
+          <div class="row">
+            <button class="btn" id="wPause">Пауза</button>
+            <button class="btn" id="wSkip">Следующий шаг</button>
+            <button class="btn danger" id="wStop">Закончить</button>
+          </div>
+        </div>
+      </div>
+      <div class="bar"><i id="totalBar"></i></div>
+      <div class="clock-foot">
+        <span id="elapsed">0:00 из 0:00</span>
+        <span class="steps" id="stepDots" aria-hidden="true"></span>
+      </div>
+    </section>
+
+    <section class="deck" aria-label="Текущая тема">
+      <div class="now">
+        <div class="eyebrow" id="nowCat">Ничего не выбрано</div>
+        <h2 id="nowName">Выбери тренировку или переключись на «Свободно»</h2>
+        <div class="row">
+          <span class="grades" role="group" aria-label="Как ответил">
+            <button class="grade" data-g="0" disabled aria-pressed="false"><kbd>1</kbd>Не знал</button>
+            <button class="grade" data-g="1" disabled aria-pressed="false"><kbd>2</kbd>Примерно</button>
+            <button class="grade" data-g="2" disabled aria-pressed="false"><kbd>3</kbd>Знал</button>
+          </span>
+          <button class="btn" id="revealBtn" disabled><kbd>R</kbd>Показать карточку</button>
+          <button class="btn" id="reroll" hidden>Другая тема</button>
+          <span class="hist" id="hist"></span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="paper" id="paper">
+    <div class="empty" id="paperEmpty">Здесь появится карточка темы</div>
+    <div class="card" id="card" hidden></div>
+    <div class="veil" id="veil" hidden>
+      <div>
+        <h3 id="veilTitle">Объясняй</h3>
+        <p id="veilText"></p>
+        <button class="btn" id="veilBtn">Показать карточку</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row" aria-label="Настройки">
+    <label class="toggle"><input type="checkbox" id="cueOn" checked> Сигнал за 3 секунды и при открытии карточки</label>
+  </div>
+  <p class="keys" id="keysHelp"></p>
+
+  <details class="lib" id="lib">
+    <summary>Все темы</summary>
+    <div class="libbody" id="libList"></div>
+    <div class="libfoot">
+      <p class="note">Оценка после каждой темы: «не знал», «примерно», «знал». Темы, которые не знал или давно не трогал, выпадают чаще; «знал» выпадает реже. Оценки хранятся в браузере этого компьютера.</p>
+      <p class="note">Карточки лежат в папке <code>topics/&lt;категория&gt;/</code> репозитория, формат описан в <code>topics/CARD-GUIDE.md</code>. Новая карточка появляется на сайте после пуша.</p>
+    </div>
+  </details>
+</div>
+
+<script>
+(() => {
+  const DAY = 86400000;
+  const $ = (id) => document.getElementById(id);
+  const statusEl = $("status");
+  const setStatus = (msg, err) => { statusEl.textContent = msg; statusEl.classList.toggle("err", !!err); };
+  const fmt = (sec) => { sec = Math.max(0, Math.ceil(sec)); const m = Math.floor(sec / 60), s = sec % 60; return m + ":" + String(s).padStart(2, "0"); };
+  const GRADE_LABEL = ["не знал", "примерно", "знал"];
+  const MODE_LABEL = { read: "Читай", explain: "Объясняй", example: "Свой пример" };
+
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem("qtrain:" + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem("qtrain:" + k, JSON.stringify(v)); } catch {} },
+    del(k) { try { localStorage.removeItem("qtrain:" + k); } catch {} },
+  };
+
+  let topics = [], cats = [], workouts = [];
+  let mode = store.get("mode", "workout");
+  let current = null;      // topic on the deck
+  let revealed = false;    // is its card visible
+  const catById = (id) => cats.find((c) => c.id === id);
+  const topicById = (id) => topics.find((t) => t.id === id);
+  const topicsIn = (cat) => topics.filter((t) => t.category === cat);
+
+  // ---------- grades ----------
+  // Every answer is graded 0 (не знал) / 1 (примерно) / 2 (знал). History per topic, newest last.
+  const gradesOf = (t) => store.get("g:" + t.id, []);
+  const lastGrade = (t) => { const g = gradesOf(t); return g.length ? g[g.length - 1] : null; };
+  function addGrade(t, g, how) {
+    const arr = gradesOf(t);
+    arr.push({ t: Date.now(), g, how });
+    if (arr.length > 60) arr.splice(0, arr.length - 60);
+    store.set("g:" + t.id, arr);
+  }
+  // A topic never graded or graded "не знал" comes up most; "знал" least; and the longer since the last grade, the more.
+  function weight(t) {
+    const lg = lastGrade(t);
+    if (!lg) return 3;
+    const base = [3, 2, 1][lg.g] || 1;
+    return base * (1 + Math.min((Date.now() - lg.t) / DAY, 14) / 14);
+  }
+  function countGrades(list) {
+    const c = { none: 0, g0: 0, g1: 0, g2: 0 };
+    for (const t of list) { const lg = lastGrade(t); if (!lg) c.none++; else c["g" + lg.g]++; }
+    return c;
+  }
+
+  // ---------- markdown ----------
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  function inline(s) {
+    const codes = [];
+    s = esc(s).replace(/`([^`]+)`/g, (m, c) => { codes.push(c); return "\u0000" + (codes.length - 1) + "\u0000"; });
+    s = s.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+    s = s.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    return s.replace(/\u0000(\d+)\u0000/g, (m, i) => "<code>" + codes[i] + "</code>");
+  }
+  function mdToHtml(md) {
+    const lines = md.replace(/\r\n/g, "\n").split("\n");
+    const out = []; let list = null, para = [], i = 0, first = true;
+    const flushPara = () => { if (para.length) { out.push('<p class="' + (first ? "lead" : "") + '">' + inline(para.join(" ")) + "</p>"); para = []; first = false; } };
+    const closeList = () => { if (list) { out.push(list === "ul" ? "</ul>" : "</ol>"); list = null; } };
+    while (i < lines.length) {
+      const l = lines[i];
+      if (l.startsWith("```")) {
+        flushPara(); closeList();
+        const buf = []; i++;
+        while (i < lines.length && !lines[i].startsWith("```")) buf.push(lines[i++]);
+        i++;
+        out.push("<pre><code>" + esc(buf.join("\n")) + "</code></pre>"); continue;
+      }
+      const h = l.match(/^(#{1,4})\s+(.*)$/);
+      if (h) { flushPara(); closeList(); const n = h[1].length; out.push("<h" + n + ">" + inline(h[2]) + "</h" + n + ">"); first = n === 2; i++; continue; }
+      const li = l.match(/^\s*([-*]|\d+[.)])\s+(.*)$/);
+      if (li) { flushPara(); const kind = /^\d/.test(li[1]) ? "ol" : "ul"; if (list !== kind) { closeList(); list = kind; out.push(kind === "ul" ? "<ul>" : "<ol>"); } out.push("<li>" + inline(li[2]) + "</li>"); i++; continue; }
+      if (!l.trim()) { flushPara(); closeList(); i++; continue; }
+      if (list && /^\s{2,}/.test(l)) { out[out.length - 1] = out[out.length - 1].replace(/<\/li>$/, " " + inline(l.trim()) + "</li>"); i++; continue; }
+      closeList(); para.push(l.trim()); i++;
+    }
+    flushPara(); closeList();
+    return out.join("\n");
+  }
+
+  // ---------- deck and paper ----------
+  // veil: { title, text } hides the card behind a prompt until "Показать" (R) or until the step's reveal moment.
+  function showTopic(t, opts = {}) {
+    current = t;
+    revealed = !!opts.revealed;
+    const c = catById(t.category) || { label: t.category, color: "#888" };
+    $("nowCat").innerHTML = '<span class="dot" style="--c:' + c.color + '"></span>' + esc(c.label) + " · " + esc(t.level);
+    $("nowName").textContent = t.title;
+    $("paperEmpty").hidden = true;
+    $("card").hidden = false;
+    $("card").innerHTML = mdToHtml(t.md);
+    $("paper").scrollTop = 0;
+    $("veilTitle").textContent = (opts.veil && opts.veil.title) || "Объясняй";
+    $("veilText").textContent = (opts.veil && opts.veil.text) || "";
+    renderVeil();
+    renderGrades();
+    renderCats();
+  }
+  function renderVeil() {
+    const hide = !!current && !revealed;
+    $("veil").hidden = !hide;
+    $("paper").classList.toggle("hidden-card", hide);
+    $("revealBtn").disabled = !current;
+    $("revealBtn").innerHTML = "<kbd>R</kbd>" + (hide ? "Показать карточку" : "Скрыть карточку");
+  }
+  function reveal(byTimer) {
+    if (!current || revealed) return;
+    revealed = true;
+    if (run && !run.done) { run.revealed = true; saveRun(); }
+    renderVeil();
+    if (byTimer) { cue(); setStatus("Карточка открыта: сверься с ней."); }
+    window.scrollTo({ top: $("paper").offsetTop - 12, behavior: "smooth" });
+  }
+  function toggleReveal() {
+    if (!current) return;
+    if (revealed) { revealed = false; if (run && !run.done) { run.revealed = false; saveRun(); } renderVeil(); }
+    else reveal(false);
+  }
+  function clearDeck(title, sub) {
+    current = null; revealed = false;
+    $("nowCat").textContent = sub;
+    $("nowName").textContent = title;
+    $("card").hidden = true; $("card").innerHTML = "";
+    $("paperEmpty").hidden = false; $("paperEmpty").textContent = title;
+    renderVeil(); renderGrades(); renderCats();
+  }
+  function renderGrades() {
+    const on = !!current;
+    const given = on && run && !run.done ? run.graded[current.id] : undefined;
+    const lg = on ? lastGrade(current) : null;
+    for (const b of document.querySelectorAll(".grade")) {
+      b.disabled = !on;
+      b.setAttribute("aria-pressed", on && (given !== undefined ? given === Number(b.dataset.g) : (!run || run.done) && !!lg && lg.g === Number(b.dataset.g) && justGraded === current.id));
+    }
+    $("hist").innerHTML = on ? histText(current) : "";
+  }
+  let justGraded = null;
+  function histText(t) {
+    const g = gradesOf(t);
+    if (!g.length) return "ещё не отвечал";
+    const dots = g.slice(-6).map((x) => '<span class="gd g' + x.g + '"></span>').join(" ");
+    return dots + " · " + GRADE_LABEL[g[g.length - 1].g] + " " + ago(g[g.length - 1].t) + " · всего " + g.length;
+  }
+  function grade(g) {
+    if (!current) return;
+    addGrade(current, g, run && !run.done ? "workout" : "free");
+    justGraded = current.id;
+    if (run && !run.done) { run.graded[current.id] = g; saveRun(); }
+    renderGrades(); renderCats();
+    if (mode === "map") renderMap();
+    setStatus("Записал: " + GRADE_LABEL[g] + ". " + (run && !run.done ? "Таймер идёт дальше." : "Следующая тема: кнопка категории или «Другая тема»."));
+  }
+  for (const b of document.querySelectorAll(".grade")) b.addEventListener("click", () => grade(Number(b.dataset.g)));
+  $("revealBtn").addEventListener("click", toggleReveal);
+  $("veilBtn").addEventListener("click", () => reveal(false));
+
+  // ---------- picking ----------
+  function pickWeighted(pool) {
+    const total = pool.reduce((s, t) => s + weight(t), 0);
+    let r = Math.random() * total;
+    for (const t of pool) { r -= weight(t); if (r <= 0) return t; }
+    return pool[pool.length - 1];
+  }
+  // A topic of one category (or any), never one of `avoid`. "any" prefers a category not yet used in this workout.
+  function pickSmart(cat, avoid = new Set(), usedCats = new Set()) {
+    let pool = topics.filter((t) => (cat === "any" || t.category === cat) && !avoid.has(t.id));
+    if (!pool.length) pool = topics.filter((t) => cat === "any" || t.category === cat);
+    if (!pool.length) return null;
+    if (cat === "any") {
+      const fresh = pool.filter((t) => !usedCats.has(t.category));
+      if (fresh.length) {
+        const catIds = [...new Set(fresh.map((t) => t.category))];
+        const chosen = catIds[Math.floor(Math.random() * catIds.length)];
+        pool = fresh.filter((t) => t.category === chosen);
+      }
+    }
+    return pickWeighted(pool);
+  }
+  function pickFree(cat) {
+    const t = pickSmart(cat, new Set(current ? [current.id] : []));
+    if (!t) { setStatus("В этой категории пока пусто.", true); return; }
+    justGraded = null;
+    showTopic(t, { revealed: !store.get("freeHide", false), veil: { title: "Объясняй", text: "Расскажи тему вслух, потом открой карточку и сверься." } });
+    setStatus("Свободный режим. R скрывает и показывает карточку, 1-2-3 ставит оценку.");
+  }
+
+  // ---------- cue ----------
+  let ctx = null;
+  function audio() {
+    if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+  function cue() {
+    if (!$("cueOn").checked) return;
+    try {
+      const c = audio(), t = c.currentTime;
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = "sine"; o.frequency.value = 880;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.08, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+      o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + 0.2);
+    } catch {}
+  }
+  $("cueOn").checked = store.get("cue", true);
+  $("cueOn").addEventListener("change", () => store.set("cue", $("cueOn").checked));
+
+  // ---------- workouts ----------
+  // Steps: "short" (one blitz topic), "deep" (one phase of a deep topic: read / explain / example), "rest".
+  function expand(w) {
+    const steps = []; let deepSlot = 0;
+    for (const b of w.blocks) {
+      if (b.type === "deep") {
+        const phases = b.phases || [], slot = deepSlot++;
+        phases.forEach((p, k) => steps.push({ kind: "deep", mode: p.mode, slot, phase: k + 1, phases: phases.length, label: b.label || "Глубоко", sec: p.play * 60, revealSec: (p.reveal || 0) * 60 }));
+        if (b.rest) steps.push({ kind: "rest", label: "Отдых", sec: b.rest * 60 });
+      } else {
+        const sets = b.sets || 1;
+        for (let i = 1; i <= sets; i++) {
+          steps.push({ kind: "short", category: b.category || "any", label: b.label || "Блиц", set: i, sets, sec: b.play * 60, revealSec: (b.reveal || 0) * 60 });
+          if (b.rest) steps.push({ kind: "rest", label: "Отдых", sec: b.rest * 60 });
+        }
+      }
+    }
+    if (steps.length && steps[steps.length - 1].kind === "rest") steps.pop();
+    return steps;
+  }
+  const totalSec = (steps) => steps.reduce((s, x) => s + x.sec, 0);
+  const deepSlots = (w) => w.blocks.filter((b) => b.type === "deep").length;
+
+  function renderPicker() {
+    const box = $("picker");
+    box.textContent = "";
+    for (const w of workouts) {
+      const steps = expand(w);
+      const card = document.createElement("article"); card.className = "wcard";
+      const h = document.createElement("h2"); h.textContent = w.title;
+      const m = document.createElement("span"); m.textContent = Math.round(totalSec(steps) / 60) + " мин"; h.appendChild(m);
+      card.appendChild(h);
+      if (w.note) { const p = document.createElement("p"); p.textContent = w.note; card.appendChild(p); }
+      const ol = document.createElement("ol");
+      for (const b of w.blocks) {
+        const li = document.createElement("li");
+        const name = document.createElement("b"), info = document.createElement("span");
+        if (b.type === "deep") {
+          li.style.setProperty("--c", "var(--ink)");
+          name.textContent = (b.label || "Глубоко") + " · одна тема";
+          info.textContent = (b.phases || []).map((p) => MODE_LABEL[p.mode] + " " + p.play).join(" + ") + " мин";
+        } else {
+          const c = b.category && b.category !== "any" ? catById(b.category) : null;
+          li.style.setProperty("--c", c ? c.color : "var(--brass)");
+          name.textContent = (b.label || "Блиц") + " · " + (c ? c.label : "любая категория");
+          info.textContent = (b.sets > 1 ? b.sets + " × " : "") + b.play + " мин" + (b.rest ? ", отдых " + b.rest : "");
+        }
+        li.append(name, info); ol.appendChild(li);
+      }
+      card.appendChild(ol);
+      const go = document.createElement("button"); go.className = "primary"; go.textContent = "Начать";
+      go.addEventListener("click", () => askDeep(w));
+      card.appendChild(go);
+      box.appendChild(card);
+    }
+  }
+
+  let run = null; // { w, steps, idx, stepStart, pausedAt, pausedTotal, elapsedBefore, plan: Map(idx->topicId), deep: [topicId], used: Set, graded: {}, revealed }
+  let tick = null, wakeLock = null;
+  async function keepAwake() {
+    try { if ("wakeLock" in navigator && document.visibilityState === "visible") wakeLock = await navigator.wakeLock.request("screen"); } catch {}
+  }
+  document.addEventListener("visibilitychange", () => { if (run && !run.done) keepAwake(); });
+
+  // Before a workout: for every deep block, which category and which topic. Topics you did not know come first.
+  const priority = (t) => { const lg = lastGrade(t); if (!lg) return 2.5; return [3, 2, 1][lg.g] + Math.min((Date.now() - lg.t) / DAY, 14) / 14; };
+  function askDeep(w) {
+    const slots = deepSlots(w);
+    if (!slots) return startWorkout(w, []);
+    const dlg = $("askDeep"), box = $("groupBtns");
+    const chosen = [];
+    const fill = (items) => {
+      box.textContent = "";
+      let focus = null;
+      items.forEach((it, k) => {
+        const b = document.createElement("button"); b.type = "button";
+        const key = document.createElement("span"); key.className = "k"; key.textContent = k < 9 ? String(k + 1) : "";
+        const name = document.createElement(it.big ? "b" : "span"); name.className = it.big ? "" : "t"; name.textContent = it.label;
+        if (it.color) name.style.color = it.color;
+        const info = document.createElement("span"); info.className = "i"; info.innerHTML = it.info || "";
+        b.append(key, name, info);
+        b.disabled = !!it.disabled;
+        if (!b.disabled && (it.last || !focus)) { if (it.last) b.classList.add("last"); focus = b; }
+        b.addEventListener("click", it.go);
+        box.appendChild(b);
+      });
+      if (focus) focus.focus();
+    };
+    const n = (k) => slots > 1 ? " " + (k + 1) + " из " + slots : "";
+    const step1 = (slot) => {
+      $("askTitle").textContent = "Глубокая тема" + n(slot) + ": категория";
+      $("askText").textContent = "Эту тему разберёшь в конце по подходам: прочитать, объяснить без карточки, свой пример. Сначала категория, потом тема.";
+      $("askBack").hidden = slot === 0;
+      $("askBack").onclick = () => step2(slot - 1, chosen[slot - 1] && topicById(chosen[slot - 1]).category);
+      const last = store.get("deepCat", null);
+      const items = [{ label: "Случайная", big: true, info: "категория и тема наугад, с перевесом к тому, что не знал", go: () => done(slot, pickSmart("any", new Set(chosen))) }];
+      for (const c of cats) {
+        const list = topicsIn(c.id).filter((t) => !chosen.includes(t.id));
+        const g = countGrades(list);
+        items.push({ label: c.label, big: true, color: c.color, last: c.id === last, disabled: !list.length,
+          info: list.length ? list.length + " тем" + (g.g0 ? ' · <span class="gd g0"></span> ' + g.g0 : "") + (g.g1 ? ' · <span class="gd g1"></span> ' + g.g1 : "") + (g.g2 ? ' · <span class="gd g2"></span> ' + g.g2 : "") + (g.none ? " · новых " + g.none : "") : "пусто",
+          go: () => step2(slot, c.id) });
+      }
+      fill(items);
+    };
+    const step2 = (slot, catId) => {
+      const c = catById(catId);
+      $("askTitle").textContent = c.title + ": какая тема?";
+      $("askText").textContent = "Сверху то, что не знал или давно не трогал.";
+      $("askBack").hidden = false;
+      $("askBack").onclick = () => step1(slot);
+      const last = store.get("deepTopic", null);
+      const list = topicsIn(catId).filter((t) => !chosen.includes(t.id)).sort((a, b) => priority(b) - priority(a) || a.title.localeCompare(b.title));
+      const items = [{ label: "Случайная из " + c.label, big: true, info: "с перевесом к тому, что не знал", go: () => done(slot, pickWeighted(list)) }];
+      for (const t of list) {
+        const lg = lastGrade(t);
+        items.push({ label: t.title, last: t.id === last,
+          info: (lg ? '<span class="gd g' + lg.g + '"></span> ' + GRADE_LABEL[lg.g] + " " + ago(lg.t) : "новая") + " · " + t.level,
+          go: () => done(slot, t) });
+      }
+      fill(items);
+    };
+    const done = (slot, t) => {
+      if (!t) { setStatus("Тем пока нет.", true); dlg.close(); return; }
+      chosen[slot] = t.id;
+      store.set("deepCat", t.category); store.set("deepTopic", t.id);
+      if (slot + 1 < slots) step1(slot + 1);
+      else { dlg.close(); startWorkout(w, chosen); }
+    };
+    step1(0);
+    dlg.showModal();
+  }
+  $("askCancel").addEventListener("click", () => $("askDeep").close());
+
+  function startWorkout(w, deep) {
+    audio();
+    run = { w, steps: expand(w), idx: -1, pausedAt: 0, pausedTotal: 0, plan: new Map(), deep, used: new Set(deep), graded: {}, elapsedBefore: 0, revealed: false };
+    $("picker").hidden = true; $("clock").hidden = false;
+    $("wPause").hidden = false; $("wSkip").hidden = false; $("wStop").textContent = "Закончить"; stopArmed = false;
+    renderDots();
+    keepAwake();
+    enterStep(0);
+    clearInterval(tick); tick = setInterval(update, 100);
+  }
+
+  function topicFor(i) {
+    const st = run.steps[i];
+    if (st.kind === "deep") return topicById(run.deep[st.slot]) || null;
+    if (st.kind !== "short") return null;
+    if (!run.plan.has(i)) {
+      const usedCats = new Set([...run.used].map((id) => (topicById(id) || {}).category));
+      const t = pickSmart(st.category, run.used, usedCats);
+      if (t) run.used.add(t.id);
+      run.plan.set(i, t ? t.id : null);
+    }
+    return topicById(run.plan.get(i)) || null;
+  }
+  function nextTopicIndex(from) {
+    for (let i = from; i < run.steps.length; i++) if (run.steps[i].kind !== "rest") return i;
+    return -1;
+  }
+  const VEIL = {
+    short: { title: "Объясняй", text: "Расскажи вслух, как кандидату на собесе: что это, пример, подводные камни. Карточка откроется сама, когда останется %r, или по R." },
+    explain: { title: "Объясняй без карточки", text: "Ты её только что читал. Расскажи вслух от начала до конца. Карточка откроется, когда останется %r, или по R." },
+    example: { title: "Свой пример", text: "Напиши код или опиши ситуацию из жизни, где это встречается. Потом открой карточку и сравни со её примером. Откроется сама, когда останется %r." },
+  };
+
+  function enterStep(i, keepRevealed) {
+    if (run.idx >= 0) run.elapsedBefore += run.steps[run.idx].sec - Math.max(0, remainingSec());
+    run.idx = i;
+    run.stepStart = performance.now(); run.pausedTotal = 0; run.pausedAt = 0; run.lastCueSec = null;
+    if (!keepRevealed) run.revealed = false;
+    $("clock").classList.remove("paused", "done");
+    $("wPause").textContent = "Пауза";
+    if (i >= run.steps.length) return finish();
+    const st = run.steps[i];
+    $("clock").classList.toggle("rest", st.kind === "rest");
+    if (st.kind === "rest") {
+      // the topic you just answered stays on the deck (grade it now); the next one is named on the clock
+      if (current) { revealed = true; renderVeil(); }
+      setStatus("Отдых. Оцени тему: 1 не знал, 2 примерно, 3 знал.");
+    } else {
+      const t = topicFor(i);
+      if (!t) { setStatus("Тем нет, пропускаю шаг.", true); return enterStep(i + 1); }
+      const v = st.kind === "short" ? VEIL.short : VEIL[st.mode] || null;
+      const show = st.kind === "deep" && st.mode === "read";
+      justGraded = null;
+      showTopic(t, { revealed: show || !!(keepRevealed && run.revealed), veil: v && { title: v.title, text: v.text.replace("%r", fmt(st.revealSec)) } });
+      if (show) setStatus("Читай карточку целиком. Следующий подход: объяснить её без подсказки.");
+      else setStatus(st.kind === "short" ? "Блиц: объясняй вслух. Пробел ставит паузу, R открывает карточку." : MODE_LABEL[st.mode] + ". R открывает карточку раньше времени.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    renderClock();
+    saveRun();
+  }
+
+  function remainingSec() {
+    if (!run || run.idx < 0 || run.idx >= run.steps.length) return 0;
+    const now = run.pausedAt || performance.now();
+    return run.steps[run.idx].sec - (now - run.stepStart - run.pausedTotal) / 1000;
+  }
+
+  function update() {
+    if (!run || run.done) return;
+    const rem = remainingSec();
+    const st = run.steps[run.idx];
+    if (!run.pausedAt) {
+      if (st.revealSec && !revealed && rem <= st.revealSec && rem > 0) reveal(true);
+      const whole = Math.ceil(rem);
+      if (whole <= 3 && whole >= 1 && run.lastCueSec !== whole && rem > 0) { run.lastCueSec = whole; cue(); }
+      if (rem <= 0) { enterStep(run.idx + 1); return; }
+      if (Math.floor(rem) % 5 === 0 && run.lastSaveSec !== Math.floor(rem)) { run.lastSaveSec = Math.floor(rem); saveRun(); }
+    }
+    renderClock();
+  }
+
+  function stepTitle(st) {
+    if (st.kind === "short") return st.label;
+    if (st.kind === "deep") return MODE_LABEL[st.mode] || st.label;
+    return st.label;
+  }
+  function renderClock() {
+    if (!run) return;
+    const st = run.steps[run.idx];
+    if (!st) return;
+    const rem = remainingSec();
+    $("stepLabel").textContent = stepTitle(st);
+    $("stepSub").textContent = st.kind === "short" ? "блиц " + st.set + " из " + st.sets
+      : st.kind === "deep" ? st.label + (run.deep.length > 1 ? " " + (st.slot + 1) : "") + " · подход " + st.phase + " из " + st.phases
+      : "";
+    $("remaining").textContent = fmt(rem);
+    const n = run.steps[run.idx + 1];
+    let nextText = "";
+    const nameOf = (i) => { const s = run.steps[i]; if (!s || s.kind === "rest") return ""; const t = s.kind === "deep" ? topicById(run.deep[s.slot]) : (run.plan.has(i) ? topicById(run.plan.get(i)) : null); return t ? " · " + esc(t.title) : (s.kind === "short" ? " · тема наугад" : ""); };
+    if (n) {
+      if (n.kind !== "rest") nextText = "Дальше: <b>" + esc(stepTitle(n)) + "</b>" + nameOf(run.idx + 1);
+      else { const k = nextTopicIndex(run.idx + 2); nextText = "Дальше: отдых " + fmt(n.sec) + (k >= 0 ? ", потом <b>" + esc(stepTitle(run.steps[k])) + "</b>" + nameOf(k) : ""); }
+    } else nextText = "Последний шаг";
+    $("nextUp").innerHTML = nextText;
+    const total = totalSec(run.steps);
+    const done = run.elapsedBefore + (st.sec - Math.max(0, rem));
+    $("elapsed").textContent = fmt(done) + " из " + fmt(total);
+    $("leftAll").innerHTML = "всего осталось <b>" + fmt(total - done) + "</b>";
+    $("totalBar").style.width = Math.min(100, done / total * 100) + "%";
+    const dots = $("stepDots").children;
+    for (let k = 0; k < dots.length; k++) {
+      dots[k].classList.toggle("d", k < run.idx); dots[k].classList.toggle("c", k === run.idx);
+      const s = run.steps[k];
+      if (s.kind === "short" && run.plan.has(k)) { const t = topicById(run.plan.get(k)); if (t) { const c = catById(t.category); dots[k].style.setProperty("--c", c ? c.color : "var(--muted)"); dots[k].title = s.label + " · " + t.title + " · " + fmt(s.sec); } }
+    }
+  }
+  function renderDots() {
+    const box = $("stepDots"); box.textContent = "";
+    for (const st of run.steps) {
+      const i = document.createElement("i");
+      if (st.kind === "rest") i.className = "r";
+      if (st.kind === "deep") { const t = topicById(run.deep[st.slot]); const c = t && catById(t.category); i.style.setProperty("--c", c ? c.color : "var(--ink)"); i.title = stepTitle(st) + (t ? " · " + t.title : "") + " · " + fmt(st.sec); }
+      else if (st.kind === "short") { const c = st.category !== "any" && catById(st.category); i.style.setProperty("--c", c ? c.color : "var(--brass)"); i.title = st.label + " " + st.set + "/" + st.sets + " · " + fmt(st.sec); }
+      else i.title = "Отдых · " + fmt(st.sec);
+      box.appendChild(i);
+    }
+  }
+
+  function togglePause() {
+    if (!run || run.done) return;
+    if (run.pausedAt) {
+      run.pausedTotal += performance.now() - run.pausedAt; run.pausedAt = 0;
+      $("clock").classList.remove("paused"); $("wPause").textContent = "Пауза";
+      setStatus("Продолжаем.");
+    } else {
+      run.pausedAt = performance.now();
+      $("clock").classList.add("paused"); $("wPause").textContent = "Продолжить";
+      setStatus("Пауза. Пробел продолжает.");
+    }
+    renderClock();
+    saveRun();
+  }
+
+  // ---------- the workout survives a page reload ----------
+  function saveRun() {
+    if (!run || run.done) return;
+    const now = run.pausedAt || performance.now();
+    store.set("run", {
+      w: run.w.id, idx: run.idx, deep: run.deep, elapsedBefore: run.elapsedBefore, graded: run.graded, revealed: revealed,
+      stepElapsed: run.idx >= 0 ? now - run.stepStart - run.pausedTotal : 0,
+      plan: [...run.plan], used: [...run.used], at: Date.now(),
+    });
+  }
+  function clearRun() { store.del("run"); }
+  function resumeRun() {
+    const s = store.get("run", null);
+    if (!s || Date.now() - s.at > 6 * 3600e3) { clearRun(); return false; }
+    const w = workouts.find((x) => x.id === s.w);
+    if (!w || s.idx < 0) { clearRun(); return false; }
+    setMode("workout");
+    run = { w, steps: expand(w), idx: -1, pausedAt: 0, pausedTotal: 0, plan: new Map(s.plan), deep: s.deep || [], used: new Set(s.used), graded: s.graded || {}, elapsedBefore: s.elapsedBefore, revealed: !!s.revealed };
+    if (s.idx >= run.steps.length) { clearRun(); run = null; return false; }
+    $("picker").hidden = true; $("clock").hidden = false;
+    $("wPause").hidden = false; $("wSkip").hidden = false; $("wStop").textContent = "Закончить"; stopArmed = false;
+    renderDots();
+    keepAwake();
+    enterStep(s.idx, true);
+    run.elapsedBefore = s.elapsedBefore;
+    run.stepStart = performance.now() - Math.max(0, s.stepElapsed);
+    run.pausedAt = performance.now();
+    $("clock").classList.add("paused"); $("wPause").textContent = "Продолжить";
+    clearInterval(tick); tick = setInterval(update, 100);
+    renderClock();
+    saveRun();
+    setStatus("Тренировка восстановлена на том же месте. Пробел или «Продолжить».");
+    return true;
+  }
+
+  function finish() {
+    clearInterval(tick);
+    run.done = true;
+    clearRun();
+    const g = Object.values(run.graded);
+    const sum = g.length ? " · оценил " + g.length + ": " + [0, 1, 2].map((k) => g.filter((x) => x === k).length + " " + GRADE_LABEL[k]).join(", ") : "";
+    if (current) { revealed = true; renderVeil(); renderGrades(); }
+    $("clock").classList.remove("rest", "paused"); $("clock").classList.add("done");
+    $("stepLabel").textContent = "Готово";
+    $("stepSub").textContent = run.w.title + sum;
+    $("remaining").textContent = fmt(run.elapsedBefore);
+    $("leftAll").textContent = "";
+    $("nextUp").textContent = "Последнюю тему ещё можно оценить.";
+    $("wPause").hidden = true; $("wSkip").hidden = true; $("wStop").textContent = "К выбору тренировки";
+    $("totalBar").style.width = "100%";
+    try { wakeLock && wakeLock.release(); } catch {}
+    setStatus("Тренировка закончена. Карта покажет, что покраснело.");
+  }
+
+  let stopArmed = false;
+  function stopWorkout() {
+    if (run && !run.done && !stopArmed) { stopArmed = true; $("wStop").textContent = "Точно закончить?"; setTimeout(() => { stopArmed = false; if (run && !run.done) $("wStop").textContent = "Закончить"; }, 3000); return; }
+    stopArmed = false;
+    clearInterval(tick);
+    try { wakeLock && wakeLock.release(); } catch {}
+    run = null;
+    clearRun();
+    $("wPause").hidden = false; $("wSkip").hidden = false; $("wStop").textContent = "Закончить";
+    $("clock").hidden = true; $("picker").hidden = mode !== "workout";
+    renderGrades();
+    setStatus("Выбери тренировку.");
+  }
+  $("wPause").addEventListener("click", togglePause);
+  $("wSkip").addEventListener("click", () => { if (run && !run.done) { if (run.pausedAt) { run.pausedTotal += performance.now() - run.pausedAt; run.pausedAt = 0; } enterStep(run.idx + 1); } });
+  $("wStop").addEventListener("click", stopWorkout);
+
+  // ---------- modes ----------
+  function setMode(m) {
+    if (run && !run.done && m !== "workout") return setStatus("Сначала закончи тренировку.", true);
+    mode = m; store.set("mode", m);
+    for (const [id, k] of [["modeWorkout", "workout"], ["modeFree", "free"], ["modeMap", "map"]]) $(id).setAttribute("aria-pressed", m === k);
+    $("cats").hidden = m !== "free";
+    $("map").hidden = m !== "map";
+    $("picker").hidden = m !== "workout" || !!run;
+    $("clock").hidden = m !== "workout" || !run;
+    $("reroll").hidden = m !== "free";
+    $("keysHelp").innerHTML = m === "free"
+      ? "<kbd>R</kbd> скрыть или показать карточку · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> оценка · <kbd>Пробел</kbd> другая тема той же категории"
+      : m === "map" ? "Цвет темы это последняя оценка. Клик по теме открывает её карточку."
+      : "<kbd>Пробел</kbd> пауза · <kbd>N</kbd> следующий шаг · <kbd>R</kbd> открыть карточку раньше · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> оценка";
+    if (m === "map") renderMap();
+    if (m === "free") renderCats();
+  }
+  $("modeWorkout").addEventListener("click", () => setMode("workout"));
+  $("modeFree").addEventListener("click", () => setMode("free"));
+  $("modeMap").addEventListener("click", () => setMode("map"));
+
+  // ---------- free mode chips ----------
+  function progBar(list) {
+    const g = countGrades(list), n = list.length || 1;
+    return '<span class="prog"><i class="p2" style="width:' + (g.g2 / n * 100) + '%"></i><i class="p1" style="width:' + (g.g1 / n * 100) + '%"></i><i class="p0" style="width:' + (g.g0 / n * 100) + '%"></i></span>';
+  }
+  function renderCats() {
+    const box = $("cats");
+    if (box.hidden && box.children.length) { for (const b of box.children) b.classList.toggle("on", !!current && b.dataset.cat === current.category); return; }
+    box.textContent = "";
+    const mk = (id, label, color, list) => {
+      const b = document.createElement("button"); b.className = "cat" + (id === "any" ? " any" : ""); b.dataset.cat = id;
+      if (color) b.style.setProperty("--c", color);
+      b.innerHTML = '<span class="label">' + esc(label) + '</span><span class="count">' + list.length + " " + plural(list.length) + "</span>" + progBar(list);
+      b.classList.toggle("on", !!current && current.category === id);
+      b.addEventListener("click", () => { audio(); pickFree(id); });
+      return b;
+    };
+    box.appendChild(mk("any", "Любая", null, topics));
+    for (const c of cats) box.appendChild(mk(c.id, c.label, c.color, topicsIn(c.id)));
+  }
+  $("reroll").addEventListener("click", () => current && pickFree(current.category));
+
+  // ---------- map ----------
+  function renderMap() {
+    const box = $("map"); box.textContent = "";
+    const all = countGrades(topics);
+    const sum = document.createElement("div"); sum.className = "map-sum";
+    sum.innerHTML = "<span><b>" + topics.length + "</b> тем</span>" +
+      '<span><span class="gd g2"></span> знал <b>' + all.g2 + "</b></span>" +
+      '<span><span class="gd g1"></span> примерно <b>' + all.g1 + "</b></span>" +
+      '<span><span class="gd g0"></span> не знал <b>' + all.g0 + "</b></span>" +
+      '<span><span class="gd"></span> не трогал <b>' + all.none + "</b></span>";
+    const reset = document.createElement("button"); reset.className = "btn danger"; reset.textContent = "Сбросить оценки";
+    reset.addEventListener("click", () => { if (confirm("Стереть все оценки на этом компьютере?")) { for (const t of topics) store.del("g:" + t.id); renderMap(); renderGrades(); } });
+    sum.appendChild(reset);
+    box.appendChild(sum);
+    for (const c of cats) {
+      const list = topicsIn(c.id);
+      const g = countGrades(list);
+      const card = document.createElement("section"); card.className = "mcard"; card.style.setProperty("--c", c.color);
+      const h = document.createElement("header");
+      h.innerHTML = "<h2>" + esc(c.label) + "<small>" + esc(c.title) + "</small></h2><span class=\"cnt\">" + list.length + " " + plural(list.length) + (g.g2 ? " · знал " + g.g2 : "") + (g.g0 ? " · не знал " + g.g0 : "") + "</span>";
+      card.appendChild(h);
+      card.insertAdjacentHTML("beforeend", progBar(list));
+      const p = document.createElement("p"); p.textContent = c.desc; card.appendChild(p);
+      if (c.includes && c.includes.length) {
+        const d = document.createElement("details");
+        d.innerHTML = "<summary>Что сюда входит</summary><ul>" + c.includes.map((x) => "<li>" + esc(x) + "</li>").join("") + "</ul>";
+        card.appendChild(d);
+      }
+      const chips = document.createElement("div"); chips.className = "chips";
+      for (const t of list.slice().sort((a, b) => a.title.localeCompare(b.title))) {
+        const lg = lastGrade(t);
+        const b = document.createElement("button"); b.className = "chip" + (lg ? " g" + lg.g : "");
+        b.innerHTML = esc(t.title) + "<small>" + esc(t.level) + (lg ? " · " + ago(lg.t) : "") + "</small>";
+        b.title = lg ? GRADE_LABEL[lg.g] + " " + ago(lg.t) + ", всего ответов " + gradesOf(t).length : "ещё не отвечал";
+        b.addEventListener("click", () => openTopic(t));
+        chips.appendChild(b);
+      }
+      if (!list.length) { chips.innerHTML = '<span class="note">Пока нет карточек.</span>'; }
+      card.appendChild(chips);
+      box.appendChild(card);
+    }
+    const leg = document.createElement("div"); leg.className = "legend";
+    leg.innerHTML = '<span><span class="gd g2"></span> знал</span><span><span class="gd g1"></span> примерно</span><span><span class="gd g0"></span> не знал</span><span><span class="gd"></span> ещё не отвечал</span>';
+    box.appendChild(leg);
+  }
+  function openTopic(t) {
+    if (run && !run.done) return setStatus("Во время тренировки темы выбирает таймер.", true);
+    setMode("free");
+    justGraded = null;
+    showTopic(t, { revealed: true, veil: { title: "Объясняй", text: "Расскажи тему вслух, потом открой карточку и сверься." } });
+    window.scrollTo({ top: $("clock").offsetTop, behavior: "smooth" });
+    setStatus("Карточка открыта. R скрывает её, чтобы ответить самому.");
+  }
+
+  // ---------- keys ----------
+  document.addEventListener("keydown", (e) => {
+    const t = e.target;
+    if ($("askDeep").open) {
+      const k = /^Digit[1-9]$/.test(e.code) ? Number(e.code.slice(5)) - 1 : -1;
+      const b = $("groupBtns").children[k];
+      if (b && !b.disabled) { e.preventDefault(); b.click(); }
+      return;
+    }
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT")) return;
+    const inRun = run && !run.done;
+    if (e.code === "Space") {
+      e.preventDefault();
+      if (inRun) togglePause(); else if (mode === "free" && current) pickFree(current.category);
+    } else if (e.code === "KeyN" && inRun) { $("wSkip").click(); }
+    else if (e.code === "KeyR" && current) { e.preventDefault(); toggleReveal(); }
+    else if (/^Digit[1-3]$/.test(e.code) && current) { e.preventDefault(); grade(Number(e.code.slice(5)) - 1); }
+  });
+
+  // ---------- library ----------
+  function plural(n) { const m10 = n % 10, m100 = n % 100; return m10 === 1 && m100 !== 11 ? "тема" : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? "темы" : "тем"; }
+  function ago(ts) {
+    if (!ts) return "ещё не отвечал";
+    const d = Math.floor((Date.now() - ts) / DAY);
+    return d === 0 ? "сегодня" : d === 1 ? "вчера" : d + " дн. назад";
+  }
+  function renderLib() {
+    const list = $("libList");
+    list.textContent = "";
+    for (const c of cats) {
+      const g = document.createElement("div"); g.className = "group"; g.style.setProperty("--c", c.color);
+      const h = document.createElement("h3"); h.textContent = c.label + " · " + c.title; g.appendChild(h);
+      const ul = document.createElement("ul");
+      const items = topicsIn(c.id);
+      if (!items.length) { const li = document.createElement("li"); li.className = "none"; li.textContent = "Пока пусто"; ul.appendChild(li); }
+      for (const t of items) {
+        const li = document.createElement("li");
+        const lg = lastGrade(t);
+        const d = document.createElement("span"); d.className = "gd" + (lg ? " g" + lg.g : ""); d.title = lg ? GRADE_LABEL[lg.g] : "ещё не отвечал";
+        const n = document.createElement("button"); n.className = "n"; n.type = "button";
+        n.textContent = t.title;
+        const sm = document.createElement("small"); sm.textContent = t.level + (lg ? " · " + GRADE_LABEL[lg.g] + " " + ago(lg.t) : ""); n.appendChild(sm);
+        n.addEventListener("click", () => openTopic(t));
+        li.append(d, n);
+        ul.appendChild(li);
+      }
+      g.appendChild(ul);
+      list.appendChild(g);
+    }
+  }
+  $("lib").addEventListener("toggle", () => { if ($("lib").open) renderLib(); });
+
+  // ---------- data ----------
+  (async () => {
+    try {
+      const [cr, tr, wr] = await Promise.all([fetch("categories.json", { cache: "no-cache" }), fetch("topics.json", { cache: "no-cache" }), fetch("workouts.json", { cache: "no-cache" })]);
+      if (!cr.ok) throw new Error("categories.json HTTP " + cr.status);
+      if (!tr.ok) throw new Error("topics.json HTTP " + tr.status + " (запусти node scripts/build-manifest.mjs)");
+      cats = await cr.json();
+      topics = (await tr.json()).topics.filter((t) => catById(t.category));
+      workouts = wr.ok ? await wr.json() : [];
+      setStatus(topics.length + " " + plural(topics.length) + " в " + cats.length + " категориях.");
+    } catch (e) {
+      setStatus("Не загрузился список: " + e.message, true);
+    }
+    renderPicker(); renderCats();
+    setMode(mode);
+    resumeRun();
+    if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+      navigator.serviceWorker.register("sw.js").catch((e) => console.warn("service worker", e));
+    }
+  })();
+  window.__trainer = { get run() { return run; }, get current() { return current; }, enterStep, weight, pickSmart, expand, startWorkout, showTopic, get topics() { return topics; }, get workouts() { return workouts; } };
+})();
+</script>
+</body>
+</html>
